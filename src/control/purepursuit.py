@@ -37,6 +37,11 @@ class PurePursuitController(BaseController):
             control: np.array of velocity and steering angle
         """
         # BEGIN QUESTION 3.1
-        "*** REPLACE THIS LINE ***"
-        raise NotImplementedError
+        # Obtain the alpha angle. Basically the angle error
+        alpha = np.arctan2(error[1], error[0])
+        # Obtain steering angle from arc
+        trueLookAhead = np.sqrt(error[0]**2 + error[1]**2)
+        steeringAngle = np.arctan2(2 * self.car_length * np.sin(alpha), trueLookAhead)
+
+        return np.array([reference_xytv[3], steeringAngle])
         # END QUESTION 3.1

@@ -63,7 +63,13 @@ class ModelPredictiveController(BaseController):
         # putting the sampled steering angles into controls.
         # BEGIN QUESTION 4.1
         "*** REPLACE THIS LINE ***"
-        raise NotImplementedError
+
+        # Creating evenly spaced steering angles
+        angles = np.linspace(self.min_delta, self.max_delta, self.K)
+
+        # Assign each steering angle to all time steps
+        controls[:, :, 1] = angles[:, np.newaxis]
+        # raise NotImplementedError
         # END QUESTION 4.1
         return controls
 
@@ -98,7 +104,22 @@ class ModelPredictiveController(BaseController):
 
         # BEGIN QUESTION 4.2
         "*** REPLACE THIS LINE ***"
-        raise NotImplementedError
+        # The prediction of the next state for each time step
+        for t in range(self.T):
+
+            #know the current state for all K rollouts
+            current_states = rollouts[:, t, :]
+
+            # know the control for the current time step
+            current_controls = controls[:, t, :]
+
+            # Using motion model to calculate the change in different states
+            changes = self.motion_model.compute_changes(current_states, current_controls, dt)
+
+            #update to new state
+            rollouts[:, t+1, :] = current_states + changes
+
+        # raise NotImplementedError
         # END QUESTION 4.2
         return rollouts
 
@@ -122,7 +143,24 @@ class ModelPredictiveController(BaseController):
         # the reference state
         # BEGIN QUESTION 4.3
         "*** REPLACE THIS LINE ***"
-        raise NotImplementedError
+
+        # get the latest (x, y) of all rollouts
+        latest_positions = rollouts[:, -1, :2]
+
+        # get the reference/starting (x, y)
+        target_positions = reference_xyt[:2]
+
+        # claculate the position difference between latest and reference/starting position
+        diff = latest_positions - target_positions
+
+        # convert the coordinated system difference to real distance
+        distances = np.linalg.norm(diff, axis=1)
+
+        #adjust the distance by the error weight
+        costs = distances * self.error_w
+
+        return costs
+        # raise NotImplementedError
         # END QUESTION 4.3
 
     def compute_collision_cost(self, rollouts, _):
@@ -152,7 +190,25 @@ class ModelPredictiveController(BaseController):
 
         # BEGIN QUESTION 4.3
         "*** REPLACE THIS LINE ***"
-        raise NotImplementedError
+
+        # reshape all rollout states into a 2D array
+        states = rollouts.reshape(-1, 3)
+
+        # check collision of all states
+        collisions = self.check_collisions_in_map(states)
+
+        # reshape collision results for every rollouts
+        collisions = collisions.reshape(self.K, self.T + 1)
+
+        # count the total amount of collisions in every rollout
+        count_collisions = np.sum(collisions, axis=1)
+
+        # total cost of all collisions
+        costs = count_collisions * self.collision_w
+
+        return costs
+
+        # raise NotImplementedError
         # END QUESTION 4.3
 
     def compute_rollout_cost(self, rollouts, reference_xyt):
@@ -197,11 +253,11 @@ class ModelPredictiveController(BaseController):
 
         # BEGIN QUESTION 4.4
         "*** REPLACE THIS LINE ***"
-        rollouts = np.zeros((self.K, self.T + 1, 3))
-        # END QUESTION 4.4
-        # BEGIN QUESTION 4.4
-        "*** REPLACE THIS LINE ***"
-        costs = np.zeros(self.K)
+        # prediction of the futir sates of all sequence
+        rollouts = self.get_rollout(pose, self.sampled_controls)
+       
+        # calculate the cost of every rollouts
+        costs = self.compute_rollout_cost(rollouts, reference_xytv)
         # END QUESTION 4.4
 
         # Set the controller's rollouts and costs (for visualization purposes).
@@ -211,9 +267,17 @@ class ModelPredictiveController(BaseController):
 
         # Hint: you may find the np.argmin function useful. Note that the
         # reference velocity has already been stored in self.sampled_controls.
+        
         # BEGIN QUESTION 4.4
         "*** REPLACE THIS LINE ***"
-        raise NotImplementedError
+        # find the best rollout with cheapest cost
+        best_route_index = np.argmin(costs)
+
+        # get the first control from the best rollout
+        control = self.sampled_controls[best_route_index, 0, :]
+
+        return control
+        # raise NotImplementedError
         # END QUESTION 4.4
 
 

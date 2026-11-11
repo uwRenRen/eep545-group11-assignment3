@@ -39,6 +39,19 @@ class PIDController(BaseController):
                 (velocity should be copied from reference velocity)
         """
         # BEGIN QUESTION 2.1
-        "*** REPLACE THIS LINE ***"
-        raise NotImplementedError
+        # Cross error signal
+        crossError = error[1]
+
+        # Compute proportional part
+        ProportionalC = crossError * self.kp
+
+        # Compute derivative part. Change of error in time
+        v = reference_xytv[3]
+        DerivativeC = self.kd * v * np.sin(pose[2] - reference_xytv[2])
+
+        # Sum the parts and get steering angle (current steering angle + control)
+        steeringAngle =  - ( ProportionalC + DerivativeC )
+        # Velocity stays the same
+        return np.array([v, steeringAngle])
+        
         # END QUESTION 2.1

@@ -15,8 +15,21 @@ def compute_position_in_frame(p, frame):
         error: p expressed in the new coordinate frame [e_x, e_y]
     """
     # BEGIN QUESTION 1.2
-    "*** REPLACE THIS LINE ***"
-    raise NotImplementedError
+    #Extract the new frame's position and orientation
+    x_f = frame[0]
+    y_f = frame[1]
+    theta_f = frame[2]
+    
+    #Calculate the difference in position
+    dx = p[0] - x_f
+    dy = p[1] - y_f
+    
+    #Rotate the position into the new frame
+    e_x = dx * np.cos(theta_f) + dy * np.sin(theta_f)
+    e_y = -dx * np.sin(theta_f) + dy * np.cos(theta_f)
+    
+    #Return the position in the new coordinate frame
+    return np.array([e_x, e_y])
     # END QUESTION 1.2
 
 
@@ -77,8 +90,22 @@ class BaseController(object):
             # Hint: compute all the distances from the current state to the
             # path's waypoints. You may find the `argmin` method useful.
             # BEGIN QUESTION 1.1
-            "*** REPLACE THIS LINE ***"
-            raise NotImplementedError
+            
+            #distance formula between current state of vehicle in x, y coordinate to all waypoints
+            dx = path_xytv[:, 0] - pose[0]
+            dy = path_xytv[:, 1] - pose[1]
+            distance = np.sqrt(dx**2 + dy**2)
+            
+            closest_waypoint = np.argmin(distance)
+            path_waypoint = distance[closest_waypoint:]
+            
+            #selecting the index of the first state that is greater than the lookahead distance from the current state
+            accepted_distances = distance_lookahead < path_waypoint
+            stored_index = np.where(accepted_distances)[0]
+            
+            if len(stored_index) > 0:
+                return int(closest_waypoint + stored_index[0])
+            
             # END QUESTION 1.1
             return len(path_xytv) - 1
 
